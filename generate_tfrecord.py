@@ -19,6 +19,7 @@ import tensorflow as tf
 from PIL import Image
 from object_detection.utils import dataset_util
 from collections import namedtuple, OrderedDict
+import hashlib
 
 flags = tf.app.flags
 flags.DEFINE_string('csv_input_train', 'csv/train_labels.csv', 'Path to the CSV train input')
@@ -57,7 +58,6 @@ def create_tf_example(group, path):
     width, height = image.size
 
     filename = group.filename.encode('utf8')
-    image_format = b'jpg'
     xmins = []
     xmaxs = []
     ymins = []
@@ -73,19 +73,22 @@ def create_tf_example(group, path):
         classes_text.append(row['class'].encode('utf8'))
         classes.append(class_text_to_int(row['class']))
 
+    key = hashlib.sha256(encoded_jpg).hexdigest()
+
     tf_example = tf.train.Example(features=tf.train.Features(feature={
-        'images/height': dataset_util.int64_feature(height),
-        'images/width': dataset_util.int64_feature(width),
-        'images/filename': dataset_util.bytes_feature(filename),
-        'images/source_id': dataset_util.bytes_feature(filename),
-        'images/encoded': dataset_util.bytes_feature(encoded_jpg),
-        'images/format': dataset_util.bytes_feature(image_format),
-        'images/object/bbox/xmin': dataset_util.float_list_feature(xmins),
-        'images/object/bbox/xmax': dataset_util.float_list_feature(xmaxs),
-        'images/object/bbox/ymin': dataset_util.float_list_feature(ymins),
-        'images/object/bbox/ymax': dataset_util.float_list_feature(ymaxs),
-        'images/object/class/text': dataset_util.bytes_list_feature(classes_text),
-        'images/object/class/label': dataset_util.int64_list_feature(classes),
+        'image/height': dataset_util.int64_feature(height),
+        'image/width': dataset_util.int64_feature(width),
+        'image/filename': dataset_util.bytes_feature(filename),
+        'image/source_id': dataset_util.bytes_feature(filename),
+        'image/key/sha256': dataset_util.bytes_feature(key.encode('utf8')),
+        'image/encoded': dataset_util.bytes_feature(encoded_jpg),
+        'image/format': dataset_util.bytes_feature('jpeg'.encode('utf8')),
+        'image/object/bbox/xmin': dataset_util.float_list_feature(xmins),
+        'image/object/bbox/xmax': dataset_util.float_list_feature(xmaxs),
+        'image/object/bbox/ymin': dataset_util.float_list_feature(ymins),
+        'image/object/bbox/ymax': dataset_util.float_list_feature(ymaxs),
+        'image/object/class/text': dataset_util.bytes_list_feature(classes_text),
+        'image/object/class/label': dataset_util.int64_list_feature(classes),
     }))
     return tf_example
 
