@@ -66,15 +66,15 @@ def create_tf_example(group, path):
     classes = []
 
     for index, row in group.object.iterrows():
-        xmins.append(row['xmin'] / width)
-        xmaxs.append(row['xmax'] / width)
-        ymins.append(row['ymin'] / height)
-        ymaxs.append(row['ymax'] / height)
-        classes_text.append(row['class'].encode('utf8'))
-        classes.append(class_text_to_int(row['class']))
+        if row['class'] != "-1":
+            xmins.append(row['xmin'] / width)
+            xmaxs.append(row['xmax'] / width)
+            ymins.append(row['ymin'] / height)
+            ymaxs.append(row['ymax'] / height)
+            classes_text.append(row['class'].encode('utf8'))
+            classes.append(class_text_to_int(row['class']))
 
     key = hashlib.sha256(encoded_jpg).hexdigest()
-
     tf_example = tf.train.Example(features=tf.train.Features(feature={
         'image/height': dataset_util.int64_feature(height),
         'image/width': dataset_util.int64_feature(width),
@@ -88,8 +88,9 @@ def create_tf_example(group, path):
         'image/object/bbox/ymin': dataset_util.float_list_feature(ymins),
         'image/object/bbox/ymax': dataset_util.float_list_feature(ymaxs),
         'image/object/class/text': dataset_util.bytes_list_feature(classes_text),
-        'image/object/class/label': dataset_util.int64_list_feature(classes),
+        'image/object/class/label': dataset_util.int64_list_feature(classes)
     }))
+
     return tf_example
 
 
@@ -112,8 +113,8 @@ def generate(csv_input, image_dir, output_path):
 
 
 def main(_):
-    # generate(FLAGS.csv_input_train, FLAGS.image_dir_train, FLAGS.output_path_train)
-    # generate(FLAGS.csv_input_validation, FLAGS.image_dir_validation, FLAGS.output_path_validation)
+    generate(FLAGS.csv_input_train, FLAGS.image_dir_train, FLAGS.output_path_train)
+    generate(FLAGS.csv_input_validation, FLAGS.image_dir_validation, FLAGS.output_path_validation)
     # generate(FLAGS.csv_input_test, FLAGS.image_dir_test, FLAGS.output_path_test)
     pass
 
